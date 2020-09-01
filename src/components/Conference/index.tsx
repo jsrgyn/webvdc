@@ -1,3 +1,4 @@
+// Type Script
 import React, { Component }  from 'react';
 
 import io from 'socket.io-client'
@@ -7,10 +8,46 @@ declare global {
     interface Window { localStream: any; }
 }
 
+interface Params 
+
 export default class Conference extends React.Component {
+  constructor(props: any) {
+    super(props);
+
+    this.state = {
+      localStream: null,    // used to hold local stream object to avoid recreating the stream everytime a new offer comes
+      remoteStream: null,    // used to hold remote stream object that is displayed in the main screen
+
+      remoteStreams: [],    // holds all Video Streams (all remote streams)
+      peerConnections: {},  // holds all Peer Connections
+      selectedVideo: null,
+
+      status: 'Please wait...',
+
+      pc_config: {
+        "iceServers": [
+          {
+            urls : 'stun:stun.l.google.com:19302'
+          }
+        ]
+      },
+
+      sdpConstraints: {
+        'mandatory': {
+            'OfferToReceiveAudio': true,
+            'OfferToReceiveVideo': true
+        }
+      },
+      messages: [],
+      sendChannels: [],
+      disconnected: false,
+    }
+  } 
 
   private socket: SocketIOClient.Socket = {} as SocketIOClient.Socket;
+  // DONT FORGET TO CHANGE TO YOUR URL
   private serviceIP: string = 'https://f1c942785e48.ngrok.io/webrtcPeer' as string;
+  
 
 
     getLocalStream = () => {
@@ -68,7 +105,7 @@ export default class Conference extends React.Component {
           }
         )
     
-        this.socket.on('connection-success', data: any => {
+        this.socket.on('connection-success', (data: any) => {
     
           this.getLocalStream()
     
@@ -81,7 +118,7 @@ export default class Conference extends React.Component {
           })
         })
     
-        this.socket.on('joined-peers', data => {
+        this.socket.on('joined-peers', (data: any) => {
     
           this.setState({
             status: data.peerCount > 1 ? `Total Connected Peers to room ${window.location.pathname}: ${data.peerCount}` : 'Waiting for other peers to connect'
@@ -90,9 +127,10 @@ export default class Conference extends React.Component {
     
         // ************************************* //
         // ************************************* //
-        this.socket.on('peer-disconnected', data => {
+        this.socket.on('peer-disconnected', (data: any) => {
     
           // close peer-connection with this peer
+          let peer = this.state.peerConnections;
           this.state.peerConnections[data.socketID].close()
     
           // get and stop remote audio and video tracks of the disconnected peer
